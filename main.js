@@ -25,8 +25,9 @@ const options = program.opts();
 const cacheDir = path.resolve(options.cache);
 
 const TEXT_HEADERS = { 'Content-Type': 'text/plain; charset=utf-8' };
-const ALLOWED_METHODS = ['GET'];
+const ALLOWED_METHODS = ['GET', 'PUT'];
 const SOURCE_HEADER = 'X-Image-Source';
+const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10 МБ на одну картинку в PUT
 
 class HttpError extends Error {
   constructor(status, message, headers = {}) {
@@ -78,6 +79,22 @@ async function fetchFromCat(code) {
   return response.body;
 }
 
+// Читає тіло запиту цілком. Потік req асинхронно ітерований: for await
+// чекає кожен наступний шматок без колбеків.
+async function readBody(req) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    // завеликий запит дочитуємо до кінця, але не зберігаємо, щоб встигнути відповісти 413
+    if (size <= MAX_BODY_SIZE) chunks.push(chunk);
+  }
+  if (size > MAX_BODY_SIZE) {
+    throw new HttpError(413, `Тіло запиту більше за ${MAX_BODY_SIZE} байт`);
+  }
+  return Buffer.concat(chunks);
+}
+
 function sendText(res, status, message, headers = {}) {
   res.writeHead(status, { ...TEXT_HEADERS, ...headers });
   res.end(message);
@@ -103,6 +120,15 @@ async function handleGet(code, res) {
   sendImage(res, image, 'http.cat');
 }
 
+async function handlePut(code, req, res) {
+  const body = await readBody(req);
+  if (body.length === 0) {
+    throw new HttpError(400, 'Тіло запиту порожнє: очікується картинка');
+  }
+  await writeFile(cachePath(code), body);
+  sendText(res, 201, `Картинку для коду ${code} збережено в кеш`);
+}
+
 async function handleRequest(req, res) {
   let url;
   try {
@@ -119,6 +145,9 @@ async function handleRequest(req, res) {
   switch (req.method) {
     case 'GET':
       await handleGet(code, res);
+      break;
+    case 'PUT':
+      await handlePut(code, req, res);
       break;
     default:
       throw new HttpError(405, `Метод ${req.method} не підтримується`, { Allow: ALLOWED_METHODS.join(', ') });

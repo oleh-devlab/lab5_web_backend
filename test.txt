@@ -28,3 +28,22 @@ ls -l cache
 
 # PUT ще не реалізовано -> 405, Allow: GET
 curl -i -X PUT http://127.0.0.1:3000/200
+
+=== метод PUT ===
+
+# Власна картинка (будь-який .jpg) -> 201
+curl -i -X PUT --data-binary @my-cat.jpg http://127.0.0.1:3000/200
+
+# GET після PUT -> 200 з кешу, повертається саме власна картинка
+curl -s -o /tmp/got.jpg -D - http://127.0.0.1:3000/200
+cmp my-cat.jpg /tmp/got.jpg && echo "однакові"
+
+# PUT без тіла -> 400
+curl -i -X PUT http://127.0.0.1:3000/201
+
+# Тіло більше за 10 МБ -> 413
+head -c 11000000 /dev/zero > /tmp/big.bin
+curl -i -X PUT --data-binary @/tmp/big.bin http://127.0.0.1:3000/202
+
+# DELETE ще не реалізовано -> 405, Allow: GET, PUT
+curl -i -X DELETE http://127.0.0.1:3000/200
