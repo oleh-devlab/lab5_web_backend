@@ -1,5 +1,5 @@
 import { program, InvalidArgumentError } from 'commander';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 import { once } from 'node:events';
 import path from 'node:path';
 import http from 'node:http';
@@ -25,7 +25,7 @@ const options = program.opts();
 const cacheDir = path.resolve(options.cache);
 
 const TEXT_HEADERS = { 'Content-Type': 'text/plain; charset=utf-8' };
-const ALLOWED_METHODS = ['GET', 'PUT'];
+const ALLOWED_METHODS = ['GET', 'PUT', 'DELETE'];
 const SOURCE_HEADER = 'X-Image-Source';
 const MAX_BODY_SIZE = 10 * 1024 * 1024; // 10 МБ на одну картинку в PUT
 
@@ -129,6 +129,18 @@ async function handlePut(code, req, res) {
   sendText(res, 201, `Картинку для коду ${code} збережено в кеш`);
 }
 
+async function handleDelete(code, res) {
+  try {
+    await unlink(cachePath(code));
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      throw new HttpError(404, `Картинки для коду ${code} немає в кеші`);
+    }
+    throw err;
+  }
+  sendText(res, 200, `Картинку для коду ${code} видалено з кешу`);
+}
+
 async function handleRequest(req, res) {
   let url;
   try {
@@ -148,6 +160,9 @@ async function handleRequest(req, res) {
       break;
     case 'PUT':
       await handlePut(code, req, res);
+      break;
+    case 'DELETE':
+      await handleDelete(code, res);
       break;
     default:
       throw new HttpError(405, `Метод ${req.method} не підтримується`, { Allow: ALLOWED_METHODS.join(', ') });

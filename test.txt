@@ -47,3 +47,15 @@ curl -i -X PUT --data-binary @/tmp/big.bin http://127.0.0.1:3000/202
 
 # DELETE ще не реалізовано -> 405, Allow: GET, PUT
 curl -i -X DELETE http://127.0.0.1:3000/200
+
+
+=== метод DELETE ===
+
+# Картинка є в кеші -> 200
+curl -i -X DELETE http://127.0.0.1:3000/200
+
+# Картинки вже немає -> 404
+curl -i -X DELETE http://127.0.0.1:3000/200
+
+# Недозволений метод -> 405, Allow: GET, PUT, DELETE
+curl -i -X POST http://127.0.0.1:3000/200
