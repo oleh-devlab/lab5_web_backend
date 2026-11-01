@@ -1,0 +1,30 @@
+node main.js -h 127.0.0.1 -p 3000 -c ./cache
+
+# Відсутня обов'язкова опція -> повідомлення про помилку, код виходу 1
+node main.js -h 127.0.0.1 -p 3000; echo "exit=$?"
+
+# Некоректний порт -> повідомлення про помилку, код виходу 1
+node main.js -h 127.0.0.1 -p abc -c ./cache; echo "exit=$?"
+
+curl -i http://127.0.0.1:3000/abc
+
+curl -i http://127.0.0.1:3000/200
+curl -i -X POST http://127.0.0.1:3000/200
+
+=== метод GET ===
+
+# Картинки немає в кеші -> 200, береться з http.cat (X-Image-Source: http.cat)
+curl -s -o /dev/null -D - -w 'час: %{time_total} с\n' http://127.0.0.1:3000/418
+
+# Повторний GET тієї самої картинки -> 200 з кешу (X-Image-Source: cache), помітно швидше
+curl -s -o /dev/null -D - -w 'час: %{time_total} с\n' http://127.0.0.1:3000/418
+
+# Картинка збереглася в теці кешу
+ls -l cache
+
+# Коду немає на http.cat -> 404, у кеш нічого не потрапляє
+curl -i http://127.0.0.1:3000/999
+ls -l cache
+
+# PUT ще не реалізовано -> 405, Allow: GET
+curl -i -X PUT http://127.0.0.1:3000/200

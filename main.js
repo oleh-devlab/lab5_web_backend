@@ -1,8 +1,9 @@
 import { program, InvalidArgumentError } from 'commander';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { once } from 'node:events';
 import path from 'node:path';
 import http from 'node:http';
+import superagent from 'superagent';
 
 function parsePort(value) {
   const n = Number(value);
@@ -24,7 +25,8 @@ const options = program.opts();
 const cacheDir = path.resolve(options.cache);
 
 const TEXT_HEADERS = { 'Content-Type': 'text/plain; charset=utf-8' };
-const ALLOWED_METHODS = [];
+const ALLOWED_METHODS = ['GET'];
+const SOURCE_HEADER = 'X-Image-Source';
 
 class HttpError extends Error {
   constructor(status, message, headers = {}) {
@@ -41,9 +43,64 @@ function parseCode(pathname) {
   return match === null ? null : match[1];
 }
 
+function cachePath(code) {
+  return path.join(cacheDir, `${code}.jpg`);
+}
+
+async function readCached(code) {
+  try {
+    return await readFile(cachePath(code));
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+async function fetchFromCat(code) {
+  let response;
+  try {
+    response = await superagent
+      .get(`https://http.cat/${code}`)
+      .timeout({ response: 5000, deadline: 15000 });
+  } catch (err) {
+    // err.status є лише тоді, коли http.cat відповів кодом 4xx/5xx;
+    // без нього це мережева помилка або тайм-аут
+    let reason;
+    if (err.status !== undefined) reason = `http.cat відповів кодом ${err.status}`;
+    else if (err.timeout) reason = 'http.cat не відповів вчасно';
+    else reason = `не вдалося з'єднатися з http.cat (${err.code ?? err.message})`;
+    throw new HttpError(404, `Картинку для коду ${code} не знайдено: ${reason}`);
+  }
+
+  if (!response.type.startsWith('image/') || !Buffer.isBuffer(response.body) || response.body.length === 0) {
+    throw new HttpError(404, `Картинку для коду ${code} не знайдено: http.cat повернув не картинку`);
+  }
+  return response.body;
+}
+
 function sendText(res, status, message, headers = {}) {
   res.writeHead(status, { ...TEXT_HEADERS, ...headers });
   res.end(message);
+}
+
+function sendImage(res, image, source) {
+  res.writeHead(200, {
+    'Content-Type': 'image/jpeg',
+    'Content-Length': image.length,
+    [SOURCE_HEADER]: source,
+  });
+  res.end(image);
+}
+
+async function handleGet(code, res) {
+  const cached = await readCached(code);
+  if (cached !== null) {
+    sendImage(res, cached, 'cache');
+    return;
+  }
+  const image = await fetchFromCat(code);
+  await writeFile(cachePath(code), image); // спершу в кеш, потім клієнтові
+  sendImage(res, image, 'http.cat');
 }
 
 async function handleRequest(req, res) {
@@ -60,6 +117,9 @@ async function handleRequest(req, res) {
   }
 
   switch (req.method) {
+    case 'GET':
+      await handleGet(code, res);
+      break;
     default:
       throw new HttpError(405, `Метод ${req.method} не підтримується`, { Allow: ALLOWED_METHODS.join(', ') });
   }
