@@ -1,0 +1,24 @@
+{
+  "name": "lab5_web_backend",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/oleh-devlab/lab5_web_backend#readme",
+  "bugs": {
+    "url": "https://github.com/oleh-devlab/lab5_web_backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oleh-devlab/lab5_web_backend.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "superagent": "^10.4.1"
+  }
+}
