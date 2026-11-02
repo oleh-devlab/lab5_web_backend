@@ -1,0 +1,247 @@
+{
+  "info": {
+    "_postman_id": "921593d8-0c19-474f-a8ea-00199a098fd5",
+    "name": "Lab5_web",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "59410884",
+    "_collection_link": "https://go.postman.co/collection/59410884-921593d8-0c19-474f-a8ea-00199a098fd5?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "GET 410 з http.cat",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Код стану 200', () => pm.response.to.have.status(200));\r\npm.test('Content-Type: image/jpeg', () => {\r\n  pm.expect(pm.response.headers.get('Content-Type')).to.eql('image/jpeg');\r\n});\r\npm.test('Джерело картинки: http.cat', () => {\r\n  pm.expect(pm.response.headers.get('X-Image-Source')).to.eql('http.cat');\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/410",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "410"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GET 410 з кешу",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Код стану 200', () => pm.response.to.have.status(200));\r\npm.test('Content-Type: image/jpeg', () => {\r\n  pm.expect(pm.response.headers.get('Content-Type')).to.eql('image/jpeg');\r\n});\r\npm.test('Джерело картинки: cache', () => {\r\n  pm.expect(pm.response.headers.get('X-Image-Source')).to.eql('cache');\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/410",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "410"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "PUT власна картинка",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Код стану 201', () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": "XSHvr2Alp/temp.jpg"
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GET після PUT",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Код стану 200', () => pm.response.to.have.status(200));\r\npm.test('Content-Type: image/jpeg', () => {\r\n  pm.expect(pm.response.headers.get('Content-Type')).to.eql('image/jpeg');\r\n});\r\npm.test('Джерело картинки: cache', () => {\r\n  pm.expect(pm.response.headers.get('X-Image-Source')).to.eql('cache');\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "DELETE 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Код стану 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "DELETE 200 повторно",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Код стану 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GET неіснуючого коду",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Код стану 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "999"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Недозволений метод",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Код стану 405', () => pm.response.to.have.status(405));\r\npm.test('Є заголовок Allow', () => pm.response.to.have.header('Allow'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    }
+  ]
+}
