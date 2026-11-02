@@ -1,6 +1,7 @@
 import { program, InvalidArgumentError } from 'commander';
-import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rename, unlink } from 'node:fs/promises';
 import { once } from 'node:events';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import http from 'node:http';
 import superagent from 'superagent';
@@ -46,6 +47,19 @@ function parseCode(pathname) {
 
 function cachePath(code) {
   return path.join(cacheDir, `${code}.jpg`);
+}
+
+async function writeAtomic(filePath, data) {
+  const tmpPath = `${filePath}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(tmpPath, data);
+    await rename(tmpPath, filePath);
+  } catch (err) {
+    try {
+      await unlink(tmpPath);
+    } catch {}
+    throw err;
+  }
 }
 
 async function readCached(code) {
@@ -116,7 +130,7 @@ async function handleGet(code, res) {
     return;
   }
   const image = await fetchFromCat(code);
-  await writeFile(cachePath(code), image); // спершу в кеш, потім клієнтові
+  await writeAtomic(cachePath(code), image);
   sendImage(res, image, 'http.cat');
 }
 
@@ -125,7 +139,7 @@ async function handlePut(code, req, res) {
   if (body.length === 0) {
     throw new HttpError(400, 'Тіло запиту порожнє: очікується картинка');
   }
-  await writeFile(cachePath(code), body);
+  await writeAtomic(cachePath(code), body);
   sendText(res, 201, `Картинку для коду ${code} збережено в кеш`);
 }
 
