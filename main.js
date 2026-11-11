@@ -38,8 +38,6 @@ class HttpError extends Error {
   }
 }
 
-// Шлях має бути рівно "/" + три цифри; усе інше (зокрема "/../x") відкидається,
-// тому ім'я файлу в кеші ніколи не будується з довільного рядка клієнта.
 function parseCode(pathname) {
   const match = /^\/(\d{3})$/.exec(pathname);
   return match === null ? null : match[1];
@@ -78,8 +76,6 @@ async function fetchFromCat(code) {
       .get(`https://http.cat/${code}`)
       .timeout({ response: 5000, deadline: 15000 });
   } catch (err) {
-    // err.status є лише тоді, коли http.cat відповів кодом 4xx/5xx;
-    // без нього це мережева помилка або тайм-аут
     let reason;
     if (err.status !== undefined) reason = `http.cat відповів кодом ${err.status}`;
     else if (err.timeout) reason = 'http.cat не відповів вчасно';
@@ -93,14 +89,12 @@ async function fetchFromCat(code) {
   return response.body;
 }
 
-// Читає тіло запиту цілком. Потік req асинхронно ітерований: for await
-// чекає кожен наступний шматок без колбеків.
 async function readBody(req) {
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    // завеликий запит дочитуємо до кінця, але не зберігаємо, щоб встигнути відповісти 413
+
     if (size <= MAX_BODY_SIZE) chunks.push(chunk);
   }
   if (size > MAX_BODY_SIZE) {
@@ -183,8 +177,6 @@ async function handleRequest(req, res) {
   }
 }
 
-// http не чекає проміс, який повертає обробник, і не ловить його помилки,
-// тому всі винятки ловимо тут: сервер має відповісти й працювати далі.
 const server = http.createServer(async (req, res) => {
   try {
     await handleRequest(req, res);
@@ -206,7 +198,6 @@ try {
 
 server.listen(options.port, options.host);
 try {
-  // once() перетворює подію на проміс: виконується на 'listening', відхиляється на 'error'
   await once(server, 'listening');
 } catch (err) {
   console.error(`Не вдалося запустити сервер: ${err.message}`);
